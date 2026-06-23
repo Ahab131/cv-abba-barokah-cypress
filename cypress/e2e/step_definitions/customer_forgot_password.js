@@ -1,80 +1,22 @@
 const { Given, When, Then } = require("@badeball/cypress-cucumber-preprocessor");
 
 // ============================================================
-// HOOKS: HANYA RESET DATABASE SATU KALI DI AWAL FILE RUN
-// ============================================================
-before(() => {
-  // Database di-refresh murni sekali saja sebelum seluruh rangkaian skenario berjalan.
-  // Ini menjamin database dalam kondisi bersih/kosong dari user duplikat.
-  cy.exec("php artisan migrate:fresh --seed");
-});
-
-// ============================================================
-// STEP DEFINITIONS: REGISTRASI (TC-005)
-// ============================================================
-
-Given("customer berada di halaman registrasi via login", () => {
-  cy.visit("/login");
-  cy.contains("Sign Up").click();
-  cy.get('input[name="username"]', { timeout: 10000 }).should("exist");
-});
-
-When("customer memasukkan identitas registrasi lengkap yang valid", () => {
-  cy.get('input[name="username"]').clear().type("Isopad23");
-  cy.get('input[name="name"]').clear().type("Abdul Hakim");
-  cy.get('input[name="password"]').clear().type("Madrid-Bayern_1-2"); // Password Awal
-  cy.get('input[name="alamat_lengkap"]').clear().type("Jl. sana sini No. 16, kota Surabaya");
-  cy.get('input[name="email"]').clear().type("hakimalbaihaqy100@gmail.com");
-  
-  cy.get('select[name="provinsi"]').select("Jawa Timur");
-  cy.get('input[name="phone"]').clear().type("0857-8596-4677");
-  cy.get('select[name="kota"]').select("Surabaya");
-});
-
-When("menekan tombol Sign Up", () => {
-  cy.get('button[type="submit"]').click();
-});
-
-Then("customer berhasil terdaftar dan diarahkan kembali ke halaman login", () => {
-  cy.get('input[name="email"]', { timeout: 10000 }).should("exist");
-  cy.url().should("include", "/login");
-});
-
-// ============================================================
-// STEP DEFINITIONS: LOGIN (TC-006)
-// ============================================================
-
-Given("customer berada di halaman login", () => {
-  cy.visit("/login");
-  cy.get('input[name="email"]', { timeout: 10000 }).should("exist");
-});
-
-When("customer memasukkan email {string} dan password {string}", (email, password) => {
-  cy.get('input[name="email"]').clear().type(email);
-  cy.get('input[name="password"]').clear().type(password);
-});
-
-When("menekan tombol Sign In", () => {
-  cy.get('button[type="submit"]').click();
-});
-
-Then("customer berhasil login dan diarahkan ke landing page utama", () => {
-  cy.url({ timeout: 10000 }).should("eq", Cypress.config().baseUrl + "/");
-  cy.get('form[action*="logout"]').should("exist");
-  
-  // Melakukan logout kembali agar bisa menguji form Lupa Password dari halaman luar
-  cy.get('form[action*="logout"]').submit(); 
-});
-
-// ============================================================
-// STEP DEFINITIONS: LUPA PASSWORD (TC-008)
+// GLOBAL BACKGROUND / PRE-CONDITION
 // ============================================================
 
 Given("customer berada di halaman lupa password via login", () => {
   cy.visit("/login");
+  
+  // Klik link Lupa Password yang ada di sebelah Sign Up
   cy.contains("Lupa Password?").click();
+  
+  // Memastikan form reset password sudah termuat sempurna
   cy.get('input[name="email"]', { timeout: 10000 }).should("exist");
 });
+
+// ============================================================
+// SCENARIO TC-008-A: Email Valid (Positive Path)
+// ============================================================
 
 When("customer memasukkan email yang terdaftar {string} dan password baru {string}", (email, newPassword) => {
   cy.get('input[name="email"]').clear().type(email);
@@ -82,16 +24,33 @@ When("customer memasukkan email yang terdaftar {string} dan password baru {strin
   cy.get('input[name="password_confirmation"]').clear().type(newPassword);
 });
 
+// ============================================================
+// GLOBAL REUSABLE ACTION: MENEKAN TOMBOL SUBMIT
+// ============================================================
+
 When("menekan tombol Perbarui Password", () => {
   cy.get('button[type="submit"]').click();
 });
 
+// ============================================================
+// SCENARIO TC-008-A: ASSERTION SUKSES
+// ============================================================
+
 Then("sistem berhasil memperbarui sandi dan diarahkan kembali ke halaman login dengan pop up sukses {string}", (successTitle) => {
+  // Pastikan dialihkan kembali ke login
   cy.url({ timeout: 10000 }).should("include", "/login");
+  
+  // Verifikasi SweetAlert sukses muncul di halaman login sesuai revisi judul terbaru
   cy.get(".swal2-popup").should("be.visible");
   cy.get(".swal2-title").should("contain.text", successTitle);
+  
+  // Tutup SweetAlert
   cy.get(".swal2-confirm").click();
 });
+
+// ============================================================
+// SCENARIO TC-008-B: Email Tidak Terdaftar (Negative Path)
+// ============================================================
 
 When("customer memasukkan email tidak terdaftar {string} dan password baru {string}", (invalidEmail, newPassword) => {
   cy.get('input[name="email"]').clear().type(invalidEmail);
@@ -99,11 +58,19 @@ When("customer memasukkan email tidak terdaftar {string} dan password baru {stri
   cy.get('input[name="password_confirmation"]').clear().type(newPassword);
 });
 
+// ============================================================
+// SCENARIO TC-008-C: Konfirmasi Tidak Sesuai (Negative Path)
+// ============================================================
+
 When("customer memasukkan email {string}, password {string}, namun konfirmasi salah {string}", (email, password, wrongConfirm) => {
   cy.get('input[name="email"]').clear().type(email);
   cy.get('input[name="password"]').clear().type(password);
   cy.get('input[name="password_confirmation"]').clear().type(wrongConfirm);
 });
+
+// ============================================================
+// SCENARIO TC-008-D: Menggunakan Password Lama Kembali (Negative Path)
+// ============================================================
 
 When("customer memasukkan email {string} dan password lama {string}", (email, oldPassword) => {
   cy.get('input[name="email"]').clear().type(email);
@@ -111,9 +78,18 @@ When("customer memasukkan email {string} dan password lama {string}", (email, ol
   cy.get('input[name="password_confirmation"]').clear().type(oldPassword);
 });
 
+// ============================================================
+// GLOBAL REUSABLE THEN ASSERTION FOR ERRORS
+// ============================================================
+
 Then("sistem menolak perubahan dan menampilkan pop up error {string}", (expectedErrorTitle) => {
+  // Tetap berada di halaman forgot-password karena gagal divalidasi oleh controller
   cy.url().should("include", "/forgot-password");
+  
+  // Verifikasi SweetAlert2 error muncul dengan title yang sesuai dengan skenario test case
   cy.get(".swal2-popup").should("be.visible");
   cy.get(".swal2-title").should("contain.text", expectedErrorTitle);
+  
+  // Tutup SweetAlert
   cy.get(".swal2-confirm").click();
 });
