@@ -68,3 +68,41 @@ Then("form tertahan oleh validasi bawaan browser", () => {
   // Memastikan SweetAlert tidak muncul (karena form belum ter-submit ke backend)
   cy.get(".swal2-popup").should("not.exist");
 });
+
+// ============================================================
+// TAMBAHAN - SCENARIO TC-006C: Password Kosong (Negative Path)
+// ============================================================
+
+When("customer memasukkan email {string} dan mengosongkan password", (email) => {
+  cy.get('input[name="email"]').clear().type(email);
+  cy.get('input[name="password"]').clear();
+});
+
+Then("form password tertahan oleh validasi bawaan browser", () => {
+  cy.url().should("include", "/login");
+  cy.get(".swal2-popup").should("not.exist");
+  
+  // Opsional tambahan: memastikan browser memicu HTML5 invalidation pada field password
+  cy.get('input[name="password"]').then(($input) => {
+    expect($input[0].validity.valueMissing).to.be.true;
+  });
+});
+
+// ============================================================
+// TAMBAHAN - SCENARIO TC-006D: Format Email Tanpa '@' (Negative Path)
+// ============================================================
+
+When("customer memasukkan email tanpa format at {string} dan password {string}", (invalidEmail, password) => {
+  cy.get('input[name="email"]').clear().type(invalidEmail);
+  cy.get('input[name="password"]').clear().type(password);
+});
+
+Then("form email tertahan oleh validasi bawaan browser", () => {
+  cy.url().should("include", "/login");
+  cy.get(".swal2-popup").should("not.exist");
+
+  // Opsional tambahan: memastikan browser mendeteksi format email salah (typeMismatch)
+  cy.get('input[name="email"]').then(($input) => {
+    expect($input[0].validity.typeMismatch).to.be.true;
+  });
+});

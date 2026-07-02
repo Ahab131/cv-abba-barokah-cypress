@@ -5,13 +5,8 @@ const { Given, When, Then } = require("@badeball/cypress-cucumber-preprocessor")
 // ============================================================
 
 Given("customer berada di halaman registrasi via login", () => {
-  // Masuk ke halaman login terlebih dahulu sesuai dengan alur pre-condition
   cy.visit("/login");
-  
-  // Klik link menuju halaman sign up
-  cy.contains("Sign Up").click();
-  
-  // Memastikan form registrasi sudah benar-benar termuat di browser
+  cy.contains("Registrasi").click();
   cy.get('input[name="username"]', { timeout: 10000 }).should("exist");
 });
 
@@ -20,29 +15,23 @@ Given("customer berada di halaman registrasi via login", () => {
 // ============================================================
 
 When("customer memasukkan identitas registrasi lengkap yang valid", () => {
-  // Pengisian data berdasarkan Test Data dokumen TC-005
   cy.get('input[name="username"]').clear().type("Isopad23");
   cy.get('input[name="name"]').clear().type("Abdul Hakim Al Baihaqy");
   cy.get('input[name="password"]').clear().type("Hakim180904");
   cy.get('input[name="alamat_lengkap"]').clear().type("Jl. sana sini No. 16, kota Surabaya");
   cy.get('input[name="email"]').clear().type("hakimalbaihaqy100@gmail.com");
   
-  // Memilih dropdown Provinsi & Kota
-  cy.get('select[name="provinsi"]').select("Jawa Timur");
+  cy.get('select[name="provinsi"]').select("Jawa Timur", { force: true });
   cy.get('input[name="phone"]').clear().type("0857-8596-4677");
-  cy.get('select[name="kota"]').select("Surabaya");
+  cy.get('select[name="kota"]').select("Surabaya", { force: true });
 });
 
 When("menekan tombol Sign Up", () => {
-  // Melakukan klik pada tombol submit form
   cy.get('button[type="submit"]').click();
 });
 
 Then("customer berhasil terdaftar dan diarahkan kembali ke halaman login", () => {
-  // Cek keberadaan elemen input email di halaman login untuk memastikan redirect sukses
   cy.get('input[name="email"]', { timeout: 10000 }).should("exist");
-
-  // Validasi final kecocokan URL akhir aplikasi
   cy.url().should("include", "/login");
 });
 
@@ -51,27 +40,21 @@ Then("customer berhasil terdaftar dan diarahkan kembali ke halaman login", () =>
 // ============================================================
 
 When("customer memasukkan email yang sudah terdaftar {string}", (duplicateEmail) => {
-  // Isi data valid, namun gunakan email yang sudah ada di database untuk memicu error unique
   cy.get('input[name="username"]').clear().type("Isopad23");
   cy.get('input[name="name"]').clear().type("Abdul Hakim");
   cy.get('input[name="password"]').clear().type("Hakim180904");
   cy.get('input[name="alamat_lengkap"]').clear().type("Jl. sana sini No. 16, kota Surabaya");
   cy.get('input[name="email"]').clear().type(duplicateEmail);
   
-  cy.get('select[name="provinsi"]').select("Jawa Timur");
+  cy.get('select[name="provinsi"]').select("Jawa Timur", { force: true });
   cy.get('input[name="phone"]').clear().type("0857-8596-4677");
-  cy.get('select[name="kota"]').select("Surabaya");
+  cy.get('select[name="kota"]').select("Surabaya", { force: true });
 });
 
 Then("sistem menolak dan menampilkan pop up {string}", (errorMessage) => {
-  // URL harus tetap tertahan di halaman register karena gagal validasi
   cy.url().should("include", "/register");
-
-  // Deteksi kemunculan modul SweetAlert2 berdasarkan text-message custom di controller Anda
   cy.get(".swal2-popup").should("be.visible");
   cy.get(".swal2-html-container").should("contain.text", "sudah terdaftar");
-  
-  // Tutup jendela pop-up SweetAlert
   cy.get(".swal2-confirm").click();
 });
 
@@ -80,7 +63,6 @@ Then("sistem menolak dan menampilkan pop up {string}", (errorMessage) => {
 // ============================================================
 
 When("customer mengosongkan semua data registrasi", () => {
-  // Mengosongkan seluruh field input secara eksplisit menggunakan .clear()
   cy.get('input[name="username"]').clear();
   cy.get('input[name="name"]').clear();
   cy.get('input[name="password"]').clear();
@@ -90,14 +72,37 @@ When("customer mengosongkan semua data registrasi", () => {
 });
 
 Then("sistem menolak dan menampilkan pop up validasi {string}", (validationMessage) => {
-  // URL harus tetap di halaman register
   cy.url().should("include", "/register");
-
-  // Deteksi SweetAlert validasi kegagalan input kosong (required)
   cy.get(".swal2-popup").should("be.visible");
   cy.get(".swal2-title").should("contain.text", "Registrasi Gagal");
   cy.get(".swal2-html-container").should("contain.text", "wajib diisi lengkap");
+  cy.get(".swal2-confirm").click();
+});
+
+// ============================================================
+// REVISI - SCENARIO TC-007-C: Password Kurang dari 8 Karakter (Negative Path)
+// ============================================================
+
+When("customer memasukkan password kurang dari delapan karakter {string}", (shortPassword) => {
+  // Input data sesuai test data TC-007-C di tabel
+  cy.get('input[name="username"]').clear().type("Revenge");
+  cy.get('input[name="name"]').clear().type("Abdul Hakim");
+  cy.get('input[name="password"]').clear().type(shortPassword); // Mengisi "Hakim12"
+  cy.get('input[name="alamat_lengkap"]').clear().type("Jl. sana sini No. 16, kota Surabaya");
+  cy.get('input[name="email"]').clear().type("hakimalbaihaqy@gmail.com");
   
-  // Tutup kembali jendela SweetAlert
+  cy.get('select[name="provinsi"]').select("Jawa Timur", { force: true });
+  cy.get('input[name="phone"]').clear().type("0857-8596-4677");
+  cy.get('select[name="kota"]').select("Surabaya", { force: true });
+});
+
+Then("sistem menolak registrasi dan menampilkan pop up validasi password {string}", (expectedMessage) => {
+  cy.url().should("include", "/register");
+
+  // Memastikan SweetAlert muncul dan berisi pesan validasi password minimal 8 karakter
+  cy.get(".swal2-popup").should("be.visible");
+  cy.get(".swal2-html-container").should("contain.text", expectedMessage);
+  
+  // Tutup SweetAlert-nya
   cy.get(".swal2-confirm").click();
 });

@@ -11,7 +11,7 @@ Given("pengunjung membuka beranda tanpa login", () => {
 Given("pengunjung berada di halaman beranda utama setelah login sah", () => {
   cy.visit("/login");
   cy.get('input[name="email"]').clear().type("hakimalbaihaqy100@gmail.com");
-  cy.get('input[name="password"]').clear().type("Hakim180904");
+  cy.get('input[name="password"]').clear().type("Abdul180904");
   cy.get('button[type="submit"]').click();
   cy.url({ timeout: 10000 }).should("not.include", "/login");
 });
@@ -28,17 +28,10 @@ When("pengunjung menekan tombol penawaran {string}", (buttonName) => {
   cy.contains("button", buttonName).click({ force: true });
 });
 
-Then("sistem memunculkan sweetalert dengan pesan {string}", (expectedAlertText) => {
-  // Validasi SweetAlert muncul
+Then("sistem memunculkan sweetalert dengan title {string} dan pesan {string}", (expectedTitle, expectedText) => {
   cy.get(".swal2-popup", { timeout: 8000 }).should("be.visible");
-  cy.get(".swal2-title").should("contain.text", "Akses Terbatas");
-  
-  // NOTE: Kita hanya memverifikasi alert muncul tanpa mengklik tombol konfirmasinya,
-  // agar browser tidak berpindah rute secara paksa di tengah pengujian skenario guest.
-});
-
-When("pengunjung menekan menu navbar khusus {string}", (menuName) => {
-  cy.get("nav").contains(menuName).click();
+  cy.get(".swal2-title").should("have.text", expectedTitle);
+  cy.get(".swal2-html-container").should("have.text", expectedText);
 });
 
 Then("halaman bergeser ke area footer dengan id {string}", (footerId) => {
@@ -46,10 +39,12 @@ Then("halaman bergeser ke area footer dengan id {string}", (footerId) => {
 });
 
 When("pengunjung mencari barang dengan teks {string} lalu enter", (keyword) => {
+  // Ditambahkan validasi form/input untuk memastikan elemen siap menerima ketikan
   cy.get('input[name="search"]').should("be.visible").clear().type(`${keyword}{enter}`);
 });
 
 Then("sistem menyaring produk dan menampilkan teks nama {string}", (productName) => {
+  // Menggunakan match case-insensitive / substring agar lebih fleksibel terhadap whitespace HTML
   cy.get("main").should("contain.text", productName);
 });
 

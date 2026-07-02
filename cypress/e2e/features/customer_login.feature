@@ -17,3 +17,15 @@ Feature: Customer Login
     When customer mengosongkan email dan password
     And menekan tombol Sign In
     Then form tertahan oleh validasi bawaan browser
+
+  Scenario: TC-006C - Customer Login Isi Field Email, Tetapi Field Password Kosong
+    Given customer berada di halaman login
+    When customer memasukkan email "hakimalbaihaqy100@gmail.com" dan mengosongkan password
+    And menekan tombol Sign In
+    Then form password tertahan oleh validasi bawaan browser
+
+  Scenario: TC-006D - Customer Login Mengisi Field Email Tanpa Menyertakan Tanda '@'
+    Given customer berada di halaman login
+    When customer memasukkan email tanpa format at "hakimalbaihaqy100gmail.com" dan password "Hakim180904"
+    And menekan tombol Sign In
+    Then form email tertahan oleh validasi bawaan browser

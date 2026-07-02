@@ -17,3 +17,9 @@ Feature: Customer Register
     When customer mengosongkan semua data registrasi
     And menekan tombol Sign Up
     Then sistem menolak dan menampilkan pop up validasi "wajib diisi lengkap"
+
+  Scenario: TC-007-C - Customer Mengisi Data Registrasi dan input password kurang dari 8 karakter
+    Given customer berada di halaman registrasi via login
+    When customer memasukkan password kurang dari delapan karakter "Hakim12"
+    And menekan tombol Sign Up
+    Then sistem menolak registrasi dan menampilkan pop up validasi password "password minimal 8 karakter."
